@@ -18,11 +18,16 @@ contract MyCombinedContract is Ownable {
         erc721_Y = new ERC721_NFT();
     }
 
-    function claimTokens() external {
-        require(!hasClaimed[msg.sender], "Already claimed");
+    mapping(uint256 => bool) private hasClaimed;
+
+    function claimTokens(uint _id) external {
+        bool condition;
+        uint256[] memory id = erc721_Y.getFirstFiveTokenId();
+        address[] memory FirstFiveAddress = erc721_Y.getFirstFiveMinters();
+
         require(
-            erc721_Y.isFromFirstFiveMinters(msg.sender),
-            "Not eligible for claiming"
+            FirstFiveAddress[_id] == msg.sender,
+            "You are not in the first five minters"
         );
 
         uint256 erc20AmountToClaim = (MAX_ERC20_SUPPLY * CLAIM_PERCENTAGE) /
@@ -36,19 +41,26 @@ contract MyCombinedContract is Ownable {
 
         erc20_X.transfer(msg.sender, erc20AmountToClaim);
 
-        hasClaimed[msg.sender] = true;
+        // Remove the claimed address and ID from the arrays
+        for (uint256 i = _id; i < FirstFiveAddress.length - 1; i++) {
+            FirstFiveAddress[i] = FirstFiveAddress[i + 1];
+            id[i] = id[i + 1];
+        }
+        FirstFiveAddress.pop();
+        id.pop();
+
         totalClaimed += erc20AmountToClaim;
     }
 
-    function mintAAA(address to) external onlyOwner {
+    function mintY(address to) external onlyOwner {
         erc721_Y.mint(to);
     }
 
-    function totalQQQSupply() external view returns (uint256) {
+    function total_X_Supply() external view returns (uint256) {
         return erc20_X.totalSupply();
     }
 
-    function totalAAASupply() external view returns (uint256) {
+    function total_Y_Supply() external view returns (uint256) {
         return erc721_Y.totalERC721Supply();
     }
 
@@ -58,13 +70,19 @@ contract MyCombinedContract is Ownable {
         returns (address[] memory, uint256[] memory)
     {
         address[] memory minters = erc721_Y.getFirstFiveMinters();
-        uint256[] memory mintedCounts = new uint256[](minters.length);
+        uint256[] memory tokens = erc721_Y.getFirstFiveTokenId();
 
-        for (uint256 i = 0; i < minters.length; i++) {
-            mintedCounts[i] = erc721_Y.getMintedCount(minters[i]);
-        }
+        // uint256[] memory tokens = new uint256[](tokenIds.length); // Use the stored tokenIds array
+        // for (uint256 i = 0; i < tokenIds.length; i++) {
+        //     tokens[i] = tokenIds[i];
+        // }
+        // uint256[] memory mintedCounts = new uint256[](minters.length);
 
-        return (minters, mintedCounts);
+        // for (uint256 i = 0; i < minters.length; i++) {
+        //     mintedCounts[i] = erc721_Y.getMintedCount(minters[i]);
+        // }
+
+        return (minters, tokens);
     }
 
     function isAddressInArray(
@@ -79,8 +97,6 @@ contract MyCombinedContract is Ownable {
         return false;
     }
 
-    mapping(address => bool) private hasClaimed;
-
     function getContractERC20Balance() external view returns (uint256) {
         return erc20_X.balanceOf(address(this));
     }
@@ -88,4 +104,5 @@ contract MyCombinedContract is Ownable {
     function getUserERC20Balance(address user) external view returns (uint256) {
         return erc20_X.balanceOf(user);
     }
+    // event MintedNFT(address indexed recipient, uint256 tokenId); // Event to emit the minted NFT's tokenId
 }
