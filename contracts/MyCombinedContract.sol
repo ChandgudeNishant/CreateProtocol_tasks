@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./ERC20_Token.sol";
 import "./ERC721_NFT.sol";
 
@@ -20,34 +23,45 @@ contract MyCombinedContract is Ownable {
 
     mapping(uint256 => bool) private hasClaimed;
 
-    function claimTokens(uint _id) external {
-        bool condition;
-        uint256[] memory id = erc721_Y.getFirstFiveTokenId();
+    function claimTokens(uint256 _id) external {
         address[] memory FirstFiveAddress = erc721_Y.getFirstFiveMinters();
+        uint256[] memory ids = erc721_Y.getFirstFiveTokenId();
+        uint256 __id = _id - 1;
 
+        require(__id < FirstFiveAddress.length, "Invalid ID");
         require(
-            FirstFiveAddress[_id] == msg.sender,
-            "You are not in the first five minters"
+            FirstFiveAddress[__id] == msg.sender,
+            "You are not in the first five minters OR ID is invalid"
+        );
+        require(
+            FirstFiveAddress[__id] != address(0),
+            "You have already claimed"
         );
 
         uint256 erc20AmountToClaim = (MAX_ERC20_SUPPLY * CLAIM_PERCENTAGE) /
-            100 /
-            5;
-        require(erc20AmountToClaim > 0, "No more tokens to claim");
+            100;
 
-        if (totalClaimed + erc20AmountToClaim > MAX_ERC20_SUPPLY) {
-            erc20AmountToClaim = MAX_ERC20_SUPPLY - totalClaimed;
-        }
+        require(erc20AmountToClaim > 0, "No more tokens to claim");
 
         erc20_X.transfer(msg.sender, erc20AmountToClaim);
 
-        // Remove the claimed address and ID from the arrays
-        for (uint256 i = _id; i < FirstFiveAddress.length - 1; i++) {
-            FirstFiveAddress[i] = FirstFiveAddress[i + 1];
-            id[i] = id[i + 1];
-        }
-        FirstFiveAddress.pop();
-        id.pop();
+        // Log the array values before modification
+        console.log(
+            "Before: Address: %s, ID: %s",
+            FirstFiveAddress[__id],
+            ids[__id]
+        );
+
+        // Reset the corresponding address and ID to zero
+        FirstFiveAddress[__id] = address(0);
+        ids[__id] = 0;
+
+        // Log the array values after modification
+        console.log(
+            "After: Address: %s, ID: %s",
+            FirstFiveAddress[__id],
+            ids[__id]
+        );
 
         totalClaimed += erc20AmountToClaim;
     }
@@ -104,5 +118,4 @@ contract MyCombinedContract is Ownable {
     function getUserERC20Balance(address user) external view returns (uint256) {
         return erc20_X.balanceOf(user);
     }
-    // event MintedNFT(address indexed recipient, uint256 tokenId); // Event to emit the minted NFT's tokenId
 }
