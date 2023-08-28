@@ -24,45 +24,21 @@ contract MyCombinedContract is Ownable {
     mapping(uint256 => bool) private hasClaimed;
 
     function claimTokens(uint256 _id) external {
-        address[] memory FirstFiveAddress = erc721_Y.getFirstFiveMinters();
-        uint256[] memory ids = erc721_Y.getFirstFiveTokenId();
         uint256 __id = _id - 1;
-
-        require(__id < FirstFiveAddress.length, "Invalid ID");
+        address[] memory FirstFiveAddress = erc721_Y.getFirstFiveMinters();
+        require(!hasClaimed[__id], "Already claimed");
         require(
             FirstFiveAddress[__id] == msg.sender,
-            "You are not in the first five minters OR ID is invalid"
+            "Not eligible for claiming"
         );
-        require(
-            FirstFiveAddress[__id] != address(0),
-            "You have already claimed"
-        );
-
+        require(__id < FirstFiveAddress.length, "Invalid ID");
         uint256 erc20AmountToClaim = (MAX_ERC20_SUPPLY * CLAIM_PERCENTAGE) /
             100;
-
         require(erc20AmountToClaim > 0, "No more tokens to claim");
 
         erc20_X.transfer(msg.sender, erc20AmountToClaim);
 
-        // Log the array values before modification
-        console.log(
-            "Before: Address: %s, ID: %s",
-            FirstFiveAddress[__id],
-            ids[__id]
-        );
-
-        // Reset the corresponding address and ID to zero
-        FirstFiveAddress[__id] = address(0);
-        ids[__id] = 0;
-
-        // Log the array values after modification
-        console.log(
-            "After: Address: %s, ID: %s",
-            FirstFiveAddress[__id],
-            ids[__id]
-        );
-
+        hasClaimed[__id] = true;
         totalClaimed += erc20AmountToClaim;
     }
 
@@ -85,17 +61,6 @@ contract MyCombinedContract is Ownable {
     {
         address[] memory minters = erc721_Y.getFirstFiveMinters();
         uint256[] memory tokens = erc721_Y.getFirstFiveTokenId();
-
-        // uint256[] memory tokens = new uint256[](tokenIds.length); // Use the stored tokenIds array
-        // for (uint256 i = 0; i < tokenIds.length; i++) {
-        //     tokens[i] = tokenIds[i];
-        // }
-        // uint256[] memory mintedCounts = new uint256[](minters.length);
-
-        // for (uint256 i = 0; i < minters.length; i++) {
-        //     mintedCounts[i] = erc721_Y.getMintedCount(minters[i]);
-        // }
-
         return (minters, tokens);
     }
 

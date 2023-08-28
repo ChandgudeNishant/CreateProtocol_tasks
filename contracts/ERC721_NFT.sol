@@ -20,10 +20,9 @@ contract ERC721_NFT is ERC721, Ownable {
     uint256 tokenId;
 
     function mint(address to) external returns (uint256) {
-        //require(msg.sender == myCombinedContract, "Only MyCombinedContract can mint");
-        // require(mintedCount[to] == 0, "Already minted ERC721 token");
+        require(tokenIdCounter < 5, "Minting limit reached"); // Limit minting to first five
 
-        tokenId = tokenIdCounter;
+        tokenId = tokenIdCounter + 1; // Start tokenId from 1
         _mint(to, tokenId);
         tokenIdCounter++;
 
